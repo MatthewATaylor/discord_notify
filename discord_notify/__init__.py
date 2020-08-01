@@ -38,8 +38,7 @@ class Notifier:
             i = 0
             length = len(self.message_queue)
             while i < length:
-                await self.__send(self.message_queue[0])
-                del self.message_queue[0]
+                await self.__send(self.message_queue.pop(0))
                 i += 1
             await asyncio.sleep(1)
 
