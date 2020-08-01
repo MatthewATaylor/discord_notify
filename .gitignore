@@ -1,3 +1,4 @@
 discord_notify.egg-info
 /dist/
+/build/
 *.pyc
