@@ -14,13 +14,13 @@ class Notifier:
             "User-Agent": "webhook"
         }
 
-    def send(self, message, print_message=False):
+    def send(self, message, print_message=True):
         """Execute webhook with the Notifier's URL
         
         Arguments:
             - message: The contents of the webhook
             - print_message (bool): Whether or not the message should be
-              printed to the console (default: False)
+              printed to the console (default: True)
         """
         data = {
             "content": str(message)
@@ -61,14 +61,14 @@ class Notifier:
             self.__timers[timer_id].daemon = daemon
             self.__timers[timer_id].start()
 
-    def send_repeat(self, message_func, interval, print_message=False, daemon=True):
+    def send_repeat(self, message_func, interval, print_message=True, daemon=True):
         """Repeatedly executes a webhook on a separate timer thread
         
         Arguments:
             - message_func: A callable that returns a message to send
             - interval (float): The number of seconds to wait between sends
             - print_message (bool): Whether or not the message should be
-              printed to the console (default: False)
+              printed to the console (default: True)
             - daemon (bool): Whether or not the timer should be a daemon thread 
               that automatically terminates with the main thread (default: True)
 

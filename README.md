@@ -25,15 +25,15 @@ notifier = dn.Notifier(URL)
 ### Sending Messages Once
 Messages can be sent through the webhook by using the `send` method of the `Notifier` class.
 ```python
-notifier.send("Hello, world!", print_message=True)
+notifier.send("Hello, world!", print_message=False)
 ```
-* `print_message` indicates whether or not the provided message should be printed to the console. It defaults to `False`.
+* `print_message` indicates whether or not the provided message should be printed to the console. It defaults to `True`.
 
 ### Sending Messages Repeatedly
 The send_repeat method can be used to send messages over a regular interval of time.
 ```python
 x = 0
-notifier.send_repeat(lambda: x, 1.5, print_message=True)
+notifier.send_repeat(lambda: x, 1.5, print_message=False)
 while x < 100000:
     x += 0.0001
 ```
@@ -43,9 +43,9 @@ The method's `daemon` parameter can be set to `False`, forcing the timer thread 
 ```python
 x = 0
 timer_id = notifier.send_repeat(
-    lambda: x, 
-    1.5, 
-    print_message=True, 
+    lambda: x,
+    1.5,
+    print_message=False,
     daemon=False
 )
 while x < 100000:
