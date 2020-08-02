@@ -1,61 +1,108 @@
+import inspect
+import json
 import threading
-import asyncio
-
-import discord
+from urllib.request import urlopen, Request
 
 
 class Notifier:
-    """
-    Wrapper for sending messages with a Discord bot
-    """
-    def __init__(self, channel_id, token):
-        self.channel_id = channel_id
-        self.token = token
-        self.client = discord.Client()
-        self.message_queue = []
+    """Minimal Discord API webhooks wrapper"""
+    def __init__(self, url):
+        self.__url = url
+        self.__timers = {}
+        self.__headers = {
+            "Content-Type": "application/json",
+            "User-Agent": "webhook"
+        }
 
-    def __start(self):
-        async def on_ready():
-            channel = self.client.get_channel(self.channel_id)
-            print("Notifier bot ready in channel: " + channel.name)
-            self.client.loop.create_task(self.__send_messages())
-        self.client.event(on_ready)
-        self.client.run(self.token)
+    def send(self, message, print_message=False):
+        """Execute webhook with the Notifier's URL
+        
+        Arguments:
+            - message: The contents of the webhook
+            - print_message (bool): Whether or not the message should be
+              printed to the console (default: False)
+        """
+        data = {
+            "content": str(message)
+        }
+        request = Request(
+            self.__url,
+            json.dumps(data).encode("UTF-8"),
+            self.__headers
+        )
+        urlopen(request)
+        if print_message:
+            print(message)
 
-    def start(self):
-        """
-        Start Discord bot in a separate thread
-        """
-        bot_thread = threading.Thread(target=self.__start, daemon=True)
-        bot_thread.start()
-        print("Bot starting up...")
+    def __message_func_exception(self, message_func):
+        """Check if the message_func is valid"""
+        if not callable(message_func):
+            raise TypeError("message_func is not callable.")
+        if len(inspect.signature(message_func).parameters) > 0:
+            raise TypeError("message_func must not have any parameters")
+        if message_func() is None:
+            raise TypeError("message_func must return a value.")
 
-    async def __send_messages(self):
-        """
-        Look through message_queue for messages to send
-        """
-        while True:
-            i = 0
-            length = len(self.message_queue)
-            while i < length:
-                await self.__send(self.message_queue.pop(0))
-                i += 1
-            await asyncio.sleep(1)
+    def __send_repeat(self, message_func, interval, timer_id, print_message, daemon):
+        """Repeat sending message_func without adding a new timer_id"""
+        self.__message_func_exception(message_func)
 
-    async def __send(self, message):
-        channel = self.client.get_channel(self.channel_id)
-        await channel.send(message)
+        if timer_id in self.__timers:
+            self.__timers[timer_id] = threading.Timer(
+                interval, 
+                self.__send_repeat, 
+                args=[message_func, interval, timer_id, print_message, daemon]
+            )
 
-    def send(self, message):
-        """
-        Add message to queue of messages to send
-        """
-        self.message_queue.append(message)
+        if timer_id in self.__timers:  # timer_id may have been deleted by now
+            self.send(message_func(), print_message)
 
-    def log(self, message):
+        if timer_id in self.__timers:  # timer_id may have been deleted by now
+            self.__timers[timer_id].daemon = daemon
+            self.__timers[timer_id].start()
+
+    def send_repeat(self, message_func, interval, print_message=False, daemon=True):
+        """Repeatedly executes a webhook on a separate timer thread
+        
+        Arguments:
+            - message_func: A callable that returns a message to send
+            - interval (float): The number of seconds to wait between sends
+            - print_message (bool): Whether or not the message should be
+              printed to the console (default: False)
+            - daemon (bool): Whether or not the timer should be a daemon thread 
+              that automatically terminates with the main thread (default: True)
+
+        Returns:
+            The ID number of the timer thread created
         """
-        Add message to queue of messages to send and
-        print message to console
+        self.__message_func_exception(message_func)
+
+        if len(self.__timers) == 0:
+            timer_id = 0
+        else:
+            max_timer_id = max(self.__timers.keys())
+            timer_id = max_timer_id + 1
+            for i in range(max_timer_id + 1):
+                if i not in self.__timers:
+                    timer_id = i
+                    break
+
+        self.__timers[timer_id] = threading.Timer(
+            interval, 
+            self.__send_repeat, 
+            args=[message_func, interval, timer_id, print_message, daemon]
+        )
+        self.send(message_func(), print_message)
+        self.__timers[timer_id].daemon = daemon
+        self.__timers[timer_id].start()
+        return timer_id
+
+    def stop_repeat(self, timer_id):
+        """Stops a timer from repeating webhook execution
+        
+        Arguments:
+            - timer_id: The ID number of the timer to stop
         """
-        self.send(message)
-        print(message)
+        if timer_id in self.__timers:
+            self.__timers[timer_id].cancel()
+            del self.__timers[timer_id]

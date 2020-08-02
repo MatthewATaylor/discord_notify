@@ -1,40 +1,57 @@
 # discord_notify
-discord_notify turns a Discord bot into a powerful remote logging tool. It serves as a wrapper for [discord.py](https://discordpy.readthedocs.io/en/latest/), allowing for simple, synchronous Discord messaging to your own channels.
+discord_notify is as a minimal Discord API webhooks wrapper for easily sending messages to a Discord channel
+
+[**Source**](https://github.com/MatthewATaylor/discord_notify)
+
+## Use Cases
+* Remote logging for lengthy Python scripts, such as:
+    * Providing notifications during neural network training (e.g. logging validation accuracy after each training epoch)
+    * Providing notifications on the status of a Python web server
+* Regularly displaying information on a Discord channel without configuring a bot
 
 ## Installation
-Run the following:
 ```
 pip install discord_notify
 ```
 
 ## Usage
-First, you'll need to [create a Discord bot](https://discordpy.readthedocs.io/en/latest/discord.html) and add it to one of your servers. 
+First, you'll need to create a new webhook for one of your Discord channels (Edit Channel > Integrations > Webhooks).
 
-Then you can use this bot in your code by starting an instance of the `Notifier` class: 
+Then you can use this webhook in your code by creating an instance of the `Notifier` class and using the webhook's URL: 
 ```python
 import discord_notify as dn
 
-notifier = dn.Notifier(
-    DISCORD_CHANNEL_ID,
-    DISCORD_TOKEN
-)
-notifier.start()
+notifier = dn.Notifier(URL)
 ```
-The `DISCORD_CHANNEL_ID` is the ID of the channel for messages to be sent to. To find this, first enable developer mode in Discord (User Settings > Appearance > Advanced > Developer Mode). Then right click on the channel to use and press "Copy ID."
 
-The `DISCORD_TOKEN` is the token of the bot you created.
-
-### Sending Messages
-Messages can be sent to the given Discord channel by using the `send` and `log` methods of the `Notifier` class.
+### Sending Messages Once
+Messages can be sent through the webhook by using the `send` method of the `Notifier` class.
 ```python
-notifier.send("Hello, world!")
-notifier.log("Hello again!")
+notifier.send("Hello, world!", print_message=True)
 ```
-* `send` sends a message to the Discord channel.
-* `log` both sends a message to the Discord channel and prints that message to the console.
+* `print_message` indicates whether or not the provided message should be printed to the console. It defaults to `False`.
 
-## Use Cases
-* Remote logging for lengthy tasks
-    * Providing notifications during neural network training (e.g. logging validation accuracy after each training epoch)
-    * Providing notifications on the status of a Python web server
-* 
+### Sending Messages Repeatedly
+The send_repeat method can be used to send messages over a regular interval of time.
+```python
+x = 0
+notifier.send_repeat(lambda: x, 1.5, print_message=True)
+while x < 100000:
+    x += 0.0001
+```
+The first parameter is a callable that returns the value to send, and the second parameter is the number of seconds to wait between webhook executions.
+
+The method's `daemon` parameter can be set to `False`, forcing the timer thread to be stopped manually with the `stop_repeat` method. This requires a `timer_id` which is returned from `send_repeat`:
+```python
+x = 0
+timer_id = notifier.send_repeat(
+    lambda: x, 
+    1.5, 
+    print_message=True, 
+    daemon=False
+)
+while x < 100000:
+    x += 0.0001
+    if x > 10000:
+        notifier.stop_repeat(timer_id)
+```
