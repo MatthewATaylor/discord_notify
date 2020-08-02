@@ -5,7 +5,7 @@ with open("README.md") as file:
 
 setup(
     name="discord_notify",
-    version="0.0.7",
+    version="1.0.0",
     description="A minimal Discord API webhooks wrapper for sending messages to a Discord channel",
     long_description=long_description,
     long_description_content_type="text/markdown",
