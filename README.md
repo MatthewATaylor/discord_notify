@@ -1,7 +1,5 @@
 # discord_notify
-discord_notify is as a minimal Discord API webhooks wrapper for easily sending messages to a Discord channel
-
-[**Source**](https://github.com/MatthewATaylor/discord_notify)
+[**discord_notify**](https://github.com/MatthewATaylor/discord_notify) is a minimal Discord API webhooks wrapper for easily sending messages to a Discord channel.
 
 ## Use Cases
 * Remote logging for lengthy Python scripts, such as:
